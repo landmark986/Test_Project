@@ -6,13 +6,16 @@ const SECRET_KEY = "LANDMARK";
 let signup = async (req, res) => {
     const { username, password } = req.body;
     let hashedPassword = await bcrypt.hash(password, 10);
-
     const newUser = new User({ username, hashedPassword });
-
+    let result = await User.find({"username":username}).exec();
     try {
-        await newUser.save();
-        console.log(newUser); // Logging the newly created user
-        res.sendStatus(201);
+        if(result.length >=1){
+            res.json({message:"User Already exists"});
+        }else{
+            await newUser.save();
+            console.log(newUser); // Logging the newly created user
+            res.sendStatus(201);
+        }
     } catch (error) {
         console.error(error);
         res.status(500).send('Internal Server Error');
@@ -23,7 +26,6 @@ let userLogin = (async (req, res) => {
     const { username, password } = req.body;
     try {
         const user = await User.findOne({ username });
-
         if (!user) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
@@ -33,7 +35,6 @@ let userLogin = (async (req, res) => {
             const token = jwt.sign({ username }, SECRET_KEY, { expiresIn: '1h' });
             return res.json({ token });
         }
-
         return res.status(401).json({ message: 'Invalid credentials' });
     } catch (error) {
         console.error(error);
